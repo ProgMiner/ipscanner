@@ -1,19 +1,3 @@
-#ifdef __linux__
-
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#elif _WIN32
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
-
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -23,13 +7,81 @@ typedef short bool;
 #define true (1);
 #define false (0);
 
+#ifdef __linux__
+
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#define __errno (errno)
+#define __error(_desc) { perror("ERROR (" _desc ")"); exit(errno); }
+
+typedef int SOCKET;
+
+const int INVALID_SOCKET = -1;
+const int SOCKET_ERROR   = -1;
+
+int __nonBlock(SOCKET sock) {
+    static int flags;
+    flags = fcntl(sock, F_GETFL, 0);
+
+    return fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+}
+
+int closesocket(SOCKET sock) {
+    return close(sock);
+}
+
+#elif _WIN32
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#define __errno (WSAGetLastError())
+
+const int EINPROGRESS = WSAEWOULDBLOCK;
+const int SHUT_RDWR   = SD_BOTH;
+
+void __error(char * desc) {
+    static char * msg;
+    msg = (char *) malloc(1024);
+
+    FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM,
+        NULL,
+        errno,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR) & msg, 0,
+        NULL
+    );
+    
+    fprintf(stderr, "ERROR (%s): %s\n", desc, msg);
+    exit(errno);
+}
+
+int __nonBlock(SOCKET sock) {
+    static unsigned long block;
+    block = 1;
+
+    return ioctlsocket(sock, FIONBIO, & block);
+}
+
+void sleep(unsigned int seconds) {
+    Sleep(seconds * 1000);
+}
+
+#endif
+
 /* => CONFIGURATION <=
 
 printBoo     - Print bad IP?                        (true/false)
 debug        - Print more info?                     (true/false)
 ports        - Ports for check.                     (unsigned integers)
-portsLen     - Count of ports.                      (unsigned integers)
-ipRange      - First and next to last IP for check. (unsigned integer)
+portsLen     - Count of ports.                      (unsigned integer)
+ipRange      - First and next to last IP for check. (unsigned integers)
 connDelay    - Connection waiting time.             (seconds, unsigned integer)
 
 */
@@ -73,114 +125,18 @@ void ipNumToStr(unsigned int ip, char * dst) {
     );
 }
 
-#ifdef __linux__
-
-bool checkConnection(unsigned int ip, unsigned int port) {
-    static bool sockOk;
-
-    static int sock;
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1) {
-        perror("ERROR (socket)");
-        exit(errno);
-    }
-
-    static flags;
-    flags = fcntl(sock, F_GETFL, 0);
-    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1 && debug) {
-        perror("ERROR (fcntl O_NONBLOCK)");
-        exit(errno);
-    }
-
-    static struct sockaddr_in sockAddr;
-    memset(& sockAddr, 0, sizeof(sockAddr));
-
-    sockAddr.sin_family = PF_INET;
-    sockAddr.sin_port = htons(port);
-    ipNumToAddr(ip, & sockAddr.sin_addr);
-
-    if (
-        connect(sock, (struct sockaddr *) & sockAddr, sizeof(sockAddr)) == -1 &&
-        errno == EINPROGRESS
-    ) {
-        static int maxFd;
-        static fd_set rfds, wfds;
-        static struct timeval tv;
-
-        tv.tv_sec = 0;
-        tv.tv_usec = 500;
-        FD_ZERO(& rfds); 
-        FD_ZERO(& wfds);
-
-        for (unsigned int i = 0; i < connDelay; ++i) {
-            sleep(1);
-
-            FD_SET(sock, & wfds);
-            FD_SET(sock, & rfds);
-            if(sock > maxFd) {
-                maxFd = sock;
-            }
-
-            select(maxFd + 1, & rfds, & wfds, NULL, & tv);
-
-            if (FD_ISSET(sock, & wfds) || FD_ISSET(sock, & rfds)) {
-                break;
-            }
-        }
-
-        if (!FD_ISSET(sock, & wfds) && !FD_ISSET(sock, & rfds)) {
-            sockOk = false;
-
-            if (debug) {
-                fprintf(stderr, "ERROR (connect): Timed out\n");
-            }
-        } else {
-            static socklen_t errLen;
-            static int error;
-
-            errLen = sizeof(error);
-            if (
-                getsockopt(sock, SOL_SOCKET, SO_ERROR, & error, & errLen) == -1 ||
-                error != 0
-            ) {
-                sockOk = false;
-
-                if (debug) {
-                    fprintf(stderr, "ERROR (connect): Socket error\n");
-                }
-            } else {
-                sockOk = true;
-            }
-        }
-    }
-
-    if (sockOk && shutdown(sock, SHUT_RDWR) == -1) {
-        perror("ERROR (shutdown)");
-        exit(errno);
-    }
-
-    if (close(sock) == -1) {
-        perror("ERROR (close)");
-        exit(errno);
-    }
-
-    return sockOk;
-}
-
-#elif _WIN32
-
 bool checkConnection(unsigned int ip, unsigned int port) {
     static bool sockOk;
 
     static SOCKET sock;
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
-        fprintf(stderr, "ERROR (socket)\n");
-        exit(WSAGetLastError());
+        __error("socket");
     }
 
-    static unsigned long block = 1;
-    ioctlsocket(sock, FIONBIO, & block);
+    if (__nonBlock(sock) == SOCKET_ERROR) {
+        __error("__nonBlock");
+    }
 
     static struct sockaddr_in sockAddr;
     memset(& sockAddr, 0, sizeof(sockAddr));
@@ -191,8 +147,9 @@ bool checkConnection(unsigned int ip, unsigned int port) {
 
     if (
         connect(sock, (struct sockaddr *) & sockAddr, sizeof(sockAddr)) == SOCKET_ERROR &&
-        WSAGetLastError() == WSAEWOULDBLOCK
+        __errno == EINPROGRESS
     ) {
+        static int maxFd = 0;
         static fd_set rfds, wfds;
         static struct timeval tv;
 
@@ -201,13 +158,16 @@ bool checkConnection(unsigned int ip, unsigned int port) {
         FD_ZERO(& rfds); 
         FD_ZERO(& wfds);
 
-        for (unsigned int i = 0; i < connDelay; ++i) {
-            Sleep(1000);
+        for (register unsigned int i = 0; i < connDelay; ++i) {
+            sleep(1);
 
             FD_SET(sock, & wfds);
             FD_SET(sock, & rfds);
+            if(sock > maxFd) {
+                maxFd = sock;
+            }
 
-            select(0, & rfds, & wfds, NULL, & tv);
+            select(maxFd + 1, & rfds, & wfds, NULL, & tv);
 
             if (FD_ISSET(sock, & wfds) || FD_ISSET(sock, & rfds)) {
                 break;
@@ -240,20 +200,16 @@ bool checkConnection(unsigned int ip, unsigned int port) {
         }
     }
 
-    if (sockOk && shutdown(sock, SD_BOTH) == SOCKET_ERROR) {
-        fprintf(stderr, "ERROR (shutdown)\n");
-        exit(WSAGetLastError());
+    if (sockOk && shutdown(sock, SHUT_RDWR) == SOCKET_ERROR) {
+        __error("shutdown");
     }
 
-    if (closesocket(sock) == SOCKET_ERROR) {
-        fprintf(stderr, "ERROR (closesocket)\n");
-        exit(WSAGetLastError());
+    if (closesocket(sock) == -1) {
+        __error("closesocket");
     }
 
     return sockOk;
 }
-
-#endif
 
 int main(int argc, char ** argv) {
     char strIP[16];
