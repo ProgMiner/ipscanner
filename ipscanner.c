@@ -7,6 +7,36 @@ typedef short bool;
 #define true (1);
 #define false (0);
 
+/* => CONFIGURATION <=
+
+printBoo     - Print bad IP?                        (true/false)
+debug        - Print more info?                     (true/false)
+ports        - Ports for check.                     (unsigned integers)
+portsLen     - Count of ports.                      (unsigned integer)
+ipRange      - First and next to last IP for check. (unsigned integers)
+connDelay    - Connection waiting time.             (seconds, unsigned integer)
+
+*/
+
+bool printBoo = true;
+bool debug = true;
+
+const unsigned int ports[] = {
+    80,  // HTTP
+    443  // HTTPS
+    //, 13, 11, 20, 21, 22, 23, 25, 43, 81, 82, 101, 109, 110, 130, 131, 132, 143, 194, 689
+};
+const unsigned int portsLen = 2;
+
+const unsigned int ipRange[] = {
+    1370590694, //  81.177.141.230   // 16843009,   //   1.  1.  1.  1
+    4294967295  // 255.255.255.255
+};
+
+unsigned int connDelay = 5;
+
+/* => CONFIGURATION END <= */
+
 #ifdef __linux__
 
 #include <sys/select.h>
@@ -74,36 +104,6 @@ void sleep(unsigned int seconds) {
 }
 
 #endif
-
-/* => CONFIGURATION <=
-
-printBoo     - Print bad IP?                        (true/false)
-debug        - Print more info?                     (true/false)
-ports        - Ports for check.                     (unsigned integers)
-portsLen     - Count of ports.                      (unsigned integer)
-ipRange      - First and next to last IP for check. (unsigned integers)
-connDelay    - Connection waiting time.             (seconds, unsigned integer)
-
-*/
-
-bool printBoo = true;
-bool debug = true;
-
-const unsigned int ports[] = {
-    80,  // HTTP
-    443  // HTTPS
-    //, 13, 11, 20, 21, 22, 23, 25, 43, 81, 82, 101, 109, 110, 130, 131, 132, 143, 194, 689
-};
-const unsigned int portsLen = 2;
-
-const unsigned int ipRange[] = {
-    1370590694, //  81.177.141.230   // 16843009,   //   1.  1.  1.  1
-    4294967295  // 255.255.255.255
-};
-
-unsigned int connDelay = 5;
-
-/* => CONFIGURATION END <= */
 
 void ipNumToAddr(unsigned int ip, struct in_addr * dst) {
     char addr[4];
