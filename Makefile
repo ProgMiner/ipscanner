@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 CC = gcc
-CFLAGS = -Wall -O2
+CFLAGS = -std=c99 -Wall -O2
 LDFLAGS =
 
 BUILDPATH = build
