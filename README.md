@@ -2,7 +2,7 @@
 A simple IPv4 address scanner
 
 ## Using
-Run `ipscanner -h` for all available arguments.
+Run `ipscanner -h` for all available options.
 
 ## Building
-Simply run `make` in root of project.
+Just run a `make` in root of project.
