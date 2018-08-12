@@ -39,5 +39,5 @@ struct {
     bool debug;
 } options;
 
-extern void initOptions(void);
+extern void initOptions(const char * path);
 extern void parseArgument(const char * arg);

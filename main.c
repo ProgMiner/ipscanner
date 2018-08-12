@@ -23,7 +23,7 @@ SOFTWARE. */
 #include "main.h"
 
 int main(int argc, char ** argv) {
-    initOptions();
+    initOptions(argv[0]);
 
     for (register int i = 1; i < argc; ++i) {
         parseArgument(argv[i]);

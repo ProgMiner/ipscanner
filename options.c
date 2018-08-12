@@ -22,7 +22,36 @@ SOFTWARE. */
 
 #include "options.h"
 
-void initOptions(void) {
+static const char * HELP =
+    "============{ IP scanner }===========\n\n"
+    "Copyright (c) 2018 Eridan Domoratskiy\n"
+    "=====================================\n\n"
+    "Desription: scans a range of IPv4 addresses by ports\n\n"
+    "Usage: %s [<options>] [--] [<begin IP>] [<end IP>]\n\n"
+    "Begin IP: a first IP to scanning in 255.255.255.255 format\n\n"
+    "End IP: a next IP after last to scanning in 255.255.255.255 format\n\n"
+    "Options:\n"
+    "  --help (-h)\n"
+    "    Show this message and quit.\n\n"
+    "  --license (-l)\n"
+    "    Show software license and quit.\n\n"
+    "  --print-boo (-b)\n"
+    "    Print bad IP?\n\n"
+    "  --debug (-D)\n"
+    "    Print more info?\n\n"
+    "  --ports (-p)\n"
+    "    Ports for check, one or more numbers in from 0 to 65535. Default: 80 443.\n\n"
+    "  --delay (-d)\n"
+    "    Connection waiting time, seconds. Default: 5 sec.\n\n"
+    "  --output (-o)\n"
+    "    File to save an \"ip:port\" pairs list, path to file. Default: not setted.\n"
+    "    !!! FILE WILL BE REWRITTEN ANYWAY !!!\n\n";
+
+const char * path;
+
+void initOptions(const char * p) {
+    path = p;
+
     static unsigned int ipRange[2] = {16843009, 4294967295};
     options.ipRange = ipRange;
 
@@ -45,40 +74,7 @@ void resetPorts(void) {
 }
 
 void printHelpAndExit(void) {
-    static const char * help =
-    "============{ IP scanner }===========\n\n"
-    "Copyright (c) 2018 Eridan Domoratskiy\n"
-    "=====================================\n\n"
-    "Desription: scans a range of IPv4 addresses by ports\n\n"
-    "Usage: "
-#ifdef __linux__
-    "./ipscanner"
-#elif _WIN32
-    "ipscanner"
-#endif
-    " [<options>] [--] [<begin IP>] [<end IP>]\n\n"
-    "Begin IP: a first IP to scanning in 255.255.255.255 format\n\n"
-    "End IP: a next IP after last to scanning in 255.255.255.255 format\n\n"
-    "Options:\n"
-    "  --help (-h)\n"
-    "\tShow this message and quit.\n\n"
-    "  --license (-l)\n"
-    "\tShow software license and quit.\n\n"
-    "  --print-boo (-b)\n"
-    "\tPrint bad IP?\n\n"
-    "  --debug (-D)\n"
-    "\tPrint more info?\n\n"
-    "  --new-ports (-P)\n"
-    "\tReset ports setted before this flag.\n\n"
-    "  --ports (-p)\n"
-    "\tPorts for check, N numbers in from 0 to 65535. Default: 80 443.\n\n"
-    "  --delay (-d)\n"
-    "\tConnection waiting time, seconds. Default: 5 sec.\n\n"
-    "  --output (-o)\n"
-    "\tFile to save an \"ip:port\" pairs list, path to file. Default: not setted.\n"
-    "\t!!! FILE WILL BE REWRITTEN ANYWAY !!!\n\n";
-
-    printf("%s", help);
+    printf(HELP, path);
     exit(0);
 }
 
@@ -113,7 +109,7 @@ void unknownOption(const char * _option, bool shortOption) {
         static char * _opt;
         _opt = (char *) malloc(3);
 
-        snprintf(_opt, 2, "-%c", * _option);
+        snprintf(_opt, 3, "-%c", * _option);
 
         option = _opt;
     } else {
@@ -125,7 +121,10 @@ void unknownOption(const char * _option, bool shortOption) {
 }
 
 void parseArgument(const char * arg) {
-    static bool ports = false, delay = false, output = false, beginIP = false;
+    static bool ports   = false,
+                delay   = false,
+                output  = false,
+                beginIP = false;
 
     if (arg[0] == '-') {
         ports = false;
@@ -137,40 +136,32 @@ void parseArgument(const char * arg) {
         arg[0] == '-' &&
         arg[1] != '-'
     ) {
-        static const char * availableArgs = "bdDhoplP";
-        ++arg;
-
-        for (; (* arg) != '\0'; ++arg) {
-            static int option;
-            option = strchri(availableArgs, * arg);
-
-            switch (option) {
-            case 0:
+        while (* ++arg) {
+            switch (* arg) {
+            case 'b':
                 options.printBoo = true;
                 break;
-            case 1:
+            case 'd':
                 delay = true;
                 break;
-            case 2:
+            case 'D':
                 options.debug = true;
                 break;
-            case 3:
+            case 'h':
                 printHelpAndExit();
                 break;
-            case 4:
+            case 'o':
                 output = true;
                 break;
-            case 5:
+            case 'p':
+                resetPorts();
                 ports = true;
                 break;
-            case 6:
+            case 'l':
                 printLicenseAndExit();
                 break;
-            case 7:
-                resetPorts();
-                break;
             default:
-                unknownOption(& availableArgs[option], true);
+                unknownOption(arg, true);
                 break;
             }
         }
@@ -179,11 +170,14 @@ void parseArgument(const char * arg) {
     }
 
     if (arg[0] == '-') {
-        if (arg[3] == '\0') {
+        if (
+            arg[1] == '-' &&
+            arg[2] == '\0'
+        ) {
             return;
         }
 
-        static const char * availableArgs = "print-boo" "delay" "debug" "help" "output" "ports" "license" "new-ports";
+        static const char * availableArgs = "print-boo" "delay" "debug" "help" "output" "ports" "license";
         arg += 2;
 
         static enum {
@@ -194,8 +188,7 @@ void parseArgument(const char * arg) {
             HELP      = 19,
             OUTPUT    = 23,
             PORTS     = 29,
-            LICENSE   = 34,
-            NEW_PORTS = 28
+            LICENSE   = 34
         } option;
         option = strstri(availableArgs, arg);
 
@@ -216,13 +209,11 @@ void parseArgument(const char * arg) {
             output = true;
             break;
         case PORTS:
+            resetPorts();
             ports = true;
             break;
         case LICENSE:
             printLicenseAndExit();
-            break;
-        case NEW_PORTS:
-            resetPorts();
             break;
         default:
             unknownOption(arg - 2, false);

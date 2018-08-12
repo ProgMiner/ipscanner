@@ -27,41 +27,39 @@ LDFLAGS =
 BUILDPATH = build
 SOURCES = linux.c main.c options.c util.c win32.c
 HEADERS = linux.h main.h options.h platform.h util.h win32.h
-EXECUTABLE = ipscanner
+TARGET = ipscanner
 
-OBJECTS = $(SOURCES:.c=.o)
+OBJECTS = $(SOURCES:%.c=$(BUILDPATH)/%.o)
 
 ifeq ($(OS), Windows_NT)
     LDFLAGS += -lws2_32
 endif
 
-__all: __build
+.PHONY: all build clean run
 
+all: build
+
+clean:
 ifneq ($(OS), Windows_NT)
-
-__clean:
 	rm -rf $(BUILDPATH)
-
 else
-
-__clean:
-	del /F $(BUILDPATH)
-
+	del /F /S /Q $(BUILDPATH)
 endif
 
-__run:
-	"$(BUILDPATH)/$(EXECUTABLE)" $(ARGS)
+run:
+	"$(BUILDPATH)/$(TARGET)" $(ARGS)
 
-$(BUILDPATH):
-	mkdir $(BUILDPATH)
-
-__build: $(BUILDPATH) $(OBJECTS) $(EXECUTABLE)
+build: $(TARGET)
 
 %.c:
 
-%.o: %.c $(HEADERS) $(BUILDPATH)
-	$(CC) -c -o $(BUILDPATH)/$@ $< $(CFLAGS)
+$(BUILDPATH)/%.o: %.c $(HEADERS)
+ifneq ($(OS), Windows_NT)
+	mkdir -p $(dir $@)
+else
+	if not exist "$(subst /,\,$(dir $@))" mkdir $(subst /,\,$(dir $@))
+endif
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(EXECUTABLE): $(OBJECTS)
-	cd "$(BUILDPATH)" && \
+$(TARGET): $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS)
