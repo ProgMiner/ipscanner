@@ -22,6 +22,11 @@ SOFTWARE. */
 
 #include "main.h"
 
+#include "platform.h"
+#include "options.h"
+#include "global.h"
+#include "util.h"
+
 int main(int argc, char ** argv) {
     initOptions(argv[0]);
 

@@ -22,8 +22,7 @@ SOFTWARE. */
 
 #pragma once
 
-#include "global.h"
-#include "util.h"
+#include "bool.h"
 
 struct {
     unsigned short * ports;

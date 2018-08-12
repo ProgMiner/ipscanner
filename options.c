@@ -22,6 +22,9 @@ SOFTWARE. */
 
 #include "options.h"
 
+#include "global.h"
+#include "util.h"
+
 static const char * HELP =
     "============{ IP scanner }===========\n\n"
     "Copyright (c) 2018 Eridan Domoratskiy\n"

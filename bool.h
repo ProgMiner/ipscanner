@@ -22,14 +22,6 @@ SOFTWARE. */
 
 #pragma once
 
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#include "global.h"
-#include "options.h"
-
-extern bool checkConnection(unsigned int ip, unsigned int port);
+typedef char bool;
+static const bool true  = 1;
+static const bool false = 0;

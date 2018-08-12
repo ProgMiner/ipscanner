@@ -24,10 +24,20 @@ SOFTWARE. */
 
 #ifdef _WIN32
 
-#include "win32.h"
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
 #else
 
-#include "linux.h"
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #endif
+
+#include "bool.h"
+
+extern bool checkConnection(unsigned int ip, unsigned int port);

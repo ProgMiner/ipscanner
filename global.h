@@ -27,6 +27,4 @@ SOFTWARE. */
 #include <stdio.h>
 #include <errno.h>
 
-typedef char bool;
-#define true (1)
-#define false (0)
+#include "bool.h"

@@ -26,7 +26,7 @@ LDFLAGS =
 
 BUILDPATH = build
 SOURCES = linux.c main.c options.c util.c win32.c
-HEADERS = linux.h main.h options.h platform.h util.h win32.h
+HEADERS = bool.h global.h main.h options.h platform.h util.h
 TARGET = ipscanner
 
 OBJECTS = $(SOURCES:%.c=$(BUILDPATH)/%.o)

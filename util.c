@@ -22,6 +22,8 @@ SOFTWARE. */
 
 #include "util.h"
 
+#include "global.h"
+
 int strchri(const char * haystack, char needle) {
     static char * ptr;
     ptr = strchr(haystack, needle);

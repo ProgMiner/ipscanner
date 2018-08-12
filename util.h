@@ -22,7 +22,6 @@ SOFTWARE. */
 
 #pragma once
 
-#include "global.h"
 #include "platform.h"
 
 extern int strchri(const char * haystack, char needle);

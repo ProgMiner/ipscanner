@@ -22,7 +22,11 @@ SOFTWARE. */
 
 #ifdef __linux__
 
-#include "linux.h"
+#include "platform.h"
+
+#include "options.h"
+#include "global.h"
+#include "util.h"
 
 #define __error(_desc) { perror("ERROR (" _desc ")"); exit(errno); }
 

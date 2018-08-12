@@ -22,7 +22,11 @@ SOFTWARE. */
 
 #ifdef _WIN32
 
-#include "win32.h"
+#include "platform.h"
+
+#include "options.h"
+#include "global.h"
+#include "util.h"
 
 void error(char * desc) {
     static char * msg;

@@ -21,7 +21,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
 #pragma once
-
-#include "global.h"
-#include "options.h"
-#include "platform.h"
